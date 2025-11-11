@@ -1,0 +1,127 @@
+﻿@page "/"
+
+<PageTitle>Index</PageTitle>
+
+<SKGLView EnableRenderLoop="true" IgnorePixelScaling="true" OnPaintSurface="OnPaintSurface" style="width: 512px; height: 512px;" />
+
+@code {
+    private SKBitmap? _mainBitmap;
+    private SKBitmap? _drawBitmap;
+    private readonly List<Circle> _circles = new();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        
+        // 创建4096x4096的主Bitmap
+        _mainBitmap = new SKBitmap(4096, 4096);
+        
+        // 创建512x512的绘制区域（指向主Bitmap的一部分）
+        var info = new SKImageInfo(512, 512);
+        _drawBitmap = new SKBitmap(info);
+        
+        // 添加示例圆
+        _circles.Add(new Circle { CenterX = 100, CenterY = 100, Radius = 50, Red = 255, Green = 0, Blue = 0 }); // 红色
+        _circles.Add(new Circle { CenterX = 300, CenterY = 300, Radius = 80, Red = 0, Green = 0, Blue = 255 }); // 蓝色
+        _circles.Add(new Circle { CenterX = 200, CenterY = 200, Radius = 30, Red = 0, Green = 255, Blue = 0 }); // 绿色
+    }
+
+    private void OnPaintSurface(SKPaintGLSurfaceEventArgs e)
+    {
+        var surface = e.Surface;
+        var canvas = surface.Canvas;
+        
+        // 清除画布
+        canvas.Clear(SKColors.White);
+
+        if (_mainBitmap == null || _drawBitmap == null) return;
+
+        // 1. 在512x512区域内绘制图元
+        DrawPrimitivesToDrawingArea();
+
+        // 2. 将绘制区域复制到主Bitmap的指定位置（这里假设复制到(0,0)位置）
+        using (var mainCanvas = new SKCanvas(_mainBitmap))
+        {
+            mainCanvas.DrawBitmap(_drawBitmap, 0, 0);
+        }
+
+        // 3. 将主Bitmap的512x512区域绘制到canvas上，并进行坐标系转换
+        DrawToCanvasWithCoordinateTransform(canvas);
+    }
+
+    private void DrawPrimitivesToDrawingArea()
+    {
+        if (_drawBitmap == null) return;
+
+        using var canvas = new SKCanvas(_drawBitmap);
+        
+        // 清除绘制区域
+        canvas.Clear(SKColors.Transparent);
+        
+        // 绘制所有圆
+        foreach (var circle in _circles)
+        {
+            DrawCircle(canvas, circle);
+        }
+    }
+
+    private void DrawCircle(SKCanvas canvas, Circle circle)
+    {
+        var color = new SKColor(circle.Red, circle.Green, circle.Blue, circle.Alpha);
+        using var paint = new SKPaint
+        {
+            Color = color,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true
+        };
+        
+        // 注意：这里使用原始坐标系（左上角原点）
+        canvas.DrawCircle(circle.CenterX, circle.CenterY, circle.Radius, paint);
+    }
+
+    private void DrawToCanvasWithCoordinateTransform(SKCanvas canvas)
+    {
+        if (_mainBitmap == null) return;
+
+        // 保存当前画布状态
+        canvas.Save();
+        
+        try
+        {
+            // 坐标系转换：将原点从左上角移动到左下角，Y轴向上为正
+            // 1. 将画布平移到下方
+            canvas.Translate(0, 512);
+            // 2. 缩放Y轴为-1，实现Y轴翻转
+            canvas.Scale(1, -1);
+            
+            // 定义源区域（主Bitmap中的512x512区域）
+            var sourceRect = new SKRect(0, 0, 512, 512);
+            // 定义目标区域（画布上的512x512区域）
+            var destRect = new SKRect(0, 0, 512, 512);
+            
+            // 绘制到转换后的坐标系中
+            using var paint = new SKPaint { IsAntialias = true };
+            canvas.DrawBitmap(_mainBitmap, sourceRect, destRect, paint);
+        }
+        finally
+        {
+            // 恢复画布状态
+            canvas.Restore();
+        }
+    }
+
+    // 添加新圆的方法（示例）
+    private void AddCircle(float x, float y, float radius, byte red, byte green, byte blue, byte alpha = 255)
+    {
+        _circles.Add(new Circle
+        {
+            CenterX = x,
+            CenterY = y,
+            Radius = radius,
+            Red = red,
+            Green = green,
+            Blue = blue,
+            Alpha = alpha
+        });
+    }
+}
