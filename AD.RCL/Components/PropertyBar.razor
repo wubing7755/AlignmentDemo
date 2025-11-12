@@ -1,0 +1,59 @@
+@using AD.RCL.Components.Props
+@inject IPrimitiveService PrimitiveService
+@implements IDisposable
+
+@if (_targetPrimitive != null)
+{
+    <div class="property-bar">
+        <div class="form-group mb-2">
+            <label class="form-label">@_targetPrimitive.Name.Value</label>
+        </div>
+
+        @foreach (var prop in _targetPrimitive.Props)
+        {
+            <div class="property-item">
+                @switch (prop)
+                {
+                    case FloatPropValue fpv:
+                        <FloatProp PropValue="fpv" />
+                        break;
+                    case IntPropValue ipv:
+                        <IntProp PropValue="ipv" />
+                        break;
+                    case BoolPropValue bpv:
+                        <BoolProp PropValue="bpv" />
+                        break;
+                    case UintPropValue upv:
+                        <UintProp PropValue="upv" />
+                        break;
+                }
+            </div>
+        }
+    </div>
+}
+else
+{
+    <p>请选择一个图元以查看其属性。</p>
+}
+
+@code {
+    private Primitive? _targetPrimitive;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        PrimitiveService.OnSelectionChanged += HandleSelectionChanged;
+    }
+
+    public void HandleSelectionChanged(IEnumerable<Primitive> primitives)
+    {
+        _targetPrimitive = primitives.FirstOrDefault();
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        PrimitiveService.OnSelectionChanged -= HandleSelectionChanged;
+    }
+}

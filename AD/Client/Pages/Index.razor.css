@@ -1,0 +1,39 @@
+﻿::deep h3 {
+    color: white;
+    text-align: center;
+}
+
+.workspace-grid-container {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 60px 1fr;
+    /* 三列，比例为 1:2:1  */
+    grid-template-columns: 1fr 2fr 1fr;
+    /* 定义区域 */
+    grid-template-areas:
+        "function-bar function-bar function-bar"
+        "primitive-tree diagram property-bar";
+    gap: 5px;
+    padding: 5px;
+    background-color: #343a40;
+}
+
+.function-bar-pane {
+    grid-area: function-bar;
+    background-color: #dc3545;
+}
+
+.primitive-tree-pane {
+    grid-area: primitive-tree;
+    background-color: #fd7e14;
+}
+
+.diagram-pane {
+    grid-area: diagram;
+    background-color: #20c997;
+}
+
+.property-bar-pane {
+    grid-area: property-bar;
+    background-color: #6f42c1;
+}

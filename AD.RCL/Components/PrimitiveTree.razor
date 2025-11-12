@@ -1,0 +1,29 @@
+@inject IPrimitiveService PrimitiveService
+
+<div class="primitive-tree">
+    <ul>
+        <li>
+            <button @onclick="() => AddPrimitive(() => new Circle())">
+                添加圆形
+            </button>
+        </li>
+        <li>
+            <button @onclick="() => AddPrimitive(() => new Rectangle())">
+                添加矩形
+            </button>
+        </li>
+        <li>
+            <button @onclick="() => AddPrimitive(() => new Triangle())">
+                添加三角形
+            </button>
+        </li>
+    </ul>
+</div>
+
+@code {
+    private void AddPrimitive(Func<Primitive> primitiveFactory)
+    {
+        var newPrimitive = primitiveFactory();
+        PrimitiveService.Add(newPrimitive);
+    }
+}

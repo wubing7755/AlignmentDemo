@@ -1,0 +1,380 @@
+@inject IPrimitiveService PrimitiveService
+@implements IDisposable
+
+<!--
+┌───────────────────┐
+│   ○ Circle        │
+│                   │
+│   ██ Rectangle    │
+│                   │
+│   ▲ Triangle      │
+└───────────────────┘
+-->
+
+<SKGLView EnableRenderLoop="true" 
+          IgnorePixelScaling="true" 
+          OnPaintSurface="OnPaintSurface" 
+          @onmousedown="HandleMouseDown"
+          style="width: 512px; height: 512px;" />
+
+@code {
+    // 主画布 4096 * 4096
+    private SKBitmap? _mainBitmap;
+    // 绘制画布 512*512
+    private SKBitmap? _drawBitmap;
+    // 检测画布 512*512
+    private SKBitmap? _hitBitmap;
+    private readonly List<Primitive> _primitives = new ();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        // 创建4096x4096的主Bitmap
+        _mainBitmap = new SKBitmap(4096, 4096);
+
+        // 创建512x512的绘制区域（指向主Bitmap的一部分）
+        var info = new SKImageInfo(512, 512);
+        // 绘制区域
+        _drawBitmap = new SKBitmap(info);
+        // 命中检测区域
+        _hitBitmap = new SKBitmap(info);
+
+        PrimitiveService.OnChange += AddPrimitive;
+    }
+
+    private void AddPrimitive(Primitive primitive)
+    {
+        _primitives.Add(primitive);
+        StateHasChanged();
+    }
+
+    private void OnPaintSurface(SKPaintGLSurfaceEventArgs e)
+    {
+        var surface = e.Surface;
+        var canvas = surface.Canvas;
+
+        // 清除画布
+        canvas.Clear(SKColors.Black);
+
+        if (_mainBitmap == null || _drawBitmap == null) return;
+
+        // 在512x512区域内绘制图元
+        DrawPrimitives();
+
+        // 将绘制区域复制到主Bitmap的指定位置
+        using (var mainCanvas = new SKCanvas(_mainBitmap))
+        {
+            // 清除指定区域
+            var clearRect = new SKRect(0, 0, 512, 512);
+            mainCanvas.ClipRect(clearRect);
+            mainCanvas.Clear(SKColors.Transparent);
+
+            mainCanvas.DrawBitmap(_drawBitmap, 0, 0);
+        }
+
+        // 将主Bitmap的512x512区域绘制到canvas上，并进行坐标系转换
+        DrawCanvas(canvas);
+
+        // 绘制坐标系标识
+        DrawCoordinateSystem(canvas);
+    }
+
+    private void DrawPrimitives()
+    {
+        if (_drawBitmap == null) return;
+
+        // 清空命中检测区域
+        using var hitCanvas = new SKCanvas(_hitBitmap);
+        hitCanvas.Clear(SKColors.Transparent);
+
+        // 清除绘制区域
+        using var canvas = new SKCanvas(_drawBitmap);
+        canvas.Clear(SKColors.Transparent);
+
+        // 绘制所有圆
+        foreach (var primitive in _primitives)
+        {
+            switch (primitive)
+            {
+                case Circle circle:
+                    DrawCircle(canvas, circle);
+                    DrawHitCircle(circle);
+                    break;
+                case Rectangle rectangle:
+                    DrawRectangle(canvas, rectangle);
+                    DrawHitRectangle(rectangle);
+                    break;
+                case Triangle triangle:
+                    DrawTriangle(canvas, triangle);
+                    DrawHitTriangle(triangle);
+                    break;
+            }
+        }
+    }
+
+    private void DrawCanvas(SKCanvas canvas)
+    {
+        if (_mainBitmap == null) return;
+
+        canvas.Save();
+
+        try
+        {
+            // 坐标系转换：将原点从左上角移动到左下角，Y轴向上为正
+            canvas.Translate(0, 512);
+            canvas.Scale(1, -1);
+
+            // 定义源区域（主Bitmap中的512x512区域）
+            var sourceRect = new SKRect(0, 0, 512, 512);
+            // 定义目标区域（画布上的512x512区域）
+            var destRect = new SKRect(0, 0, 512, 512);
+
+            // 绘制到转换后的坐标系中
+            using var paint = new SKPaint { IsAntialias = true };
+            canvas.DrawBitmap(_mainBitmap, sourceRect, destRect, paint);
+        }
+        finally
+        {
+            canvas.Restore();
+        }
+    }
+
+    private void HandleMouseDown(MouseEventArgs e)
+    {
+        if (_hitBitmap == null) return;
+
+        // 直接获取相对坐标（画布512x512像素）
+        var x = (int)e.OffsetX;
+        var y = (int)e.OffsetY;
+
+        // 调整坐标系（Y轴翻转）
+        y = 512 - y;
+
+        // 获取像素颜色
+        var color = _hitBitmap.GetPixel(x, y);
+
+        // 点击空白处，清除选择
+        if (color.Alpha == 0)
+        {
+            PrimitiveService.ClearSelection();
+            return;
+        }
+
+        // 查找对应的图元
+        var colorKey = (uint)color;
+        if (!ColorKeyManager.TryGetPrimitive(colorKey, out var primitive) || primitive is null)
+            return;
+
+        if (e.CtrlKey)
+        {
+            PrimitiveService.AppendSelected(primitive);
+        }
+        else
+        {
+            PrimitiveService.SetSelected(primitive);
+        }
+    }
+
+    #region 图形绘制方法
+
+    /// <summary>
+    /// 绘制圆形
+    /// </summary>
+    private void DrawCircle(SKCanvas canvas, Circle circle)
+    {
+        var color = new SKColor(circle.Color.Value);
+        using var paint = new SKPaint
+        {
+            Color = color,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true
+        };
+        canvas.DrawCircle(circle.CenterX.Value, circle.CenterY.Value, circle.Radius.Value, paint);
+    }
+
+    private void DrawHitCircle(Circle circle)
+    {
+        using var hitCanvas = new SKCanvas(_hitBitmap!);
+        var color = Color.FromUint(circle.ColorKey.Value);
+        using var paint = new SKPaint
+        {
+            Color = new SKColor(color.R, color.G, color.B, color.A),
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true
+        };
+        hitCanvas.DrawCircle(circle.CenterX.Value, circle.CenterY.Value, circle.Radius.Value, paint);
+    }
+
+    /// <summary>
+    /// 绘制矩形
+    /// </summary>
+    private void DrawRectangle(SKCanvas canvas, Rectangle rectangle)
+    {
+        var color = new SKColor(rectangle.Color.Value);
+        using var paint = new SKPaint
+        {
+            Color = color,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true
+        };
+
+        // 左上角坐标和右下角坐标
+        var rect = new SKRect(rectangle.PosX.Value, rectangle.PosY.Value, rectangle.PosX.Value + rectangle.Width.Value, rectangle.PosY.Value + rectangle.Height.Value);
+        canvas.DrawRect(rect, paint);
+    }
+
+    private void DrawHitRectangle(Rectangle rectangle)
+    {
+        using var hitCanvas = new SKCanvas(_hitBitmap!);
+        var color = Color.FromUint(rectangle.ColorKey.Value);
+        using var paint = new SKPaint
+        {
+            Color = new SKColor(color.R, color.G, color.B, color.A),
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true
+        };
+        var rect = new SKRect(
+            rectangle.PosX.Value,
+            rectangle.PosY.Value,
+            rectangle.PosX.Value + rectangle.Width.Value,
+            rectangle.PosY.Value + rectangle.Height.Value);
+        hitCanvas.DrawRect(rect, paint);
+    }
+
+    /// <summary>
+    /// 绘制三角形
+    /// </summary>
+    private void DrawTriangle(SKCanvas canvas, Triangle triangle)
+    {
+        var color = new SKColor(triangle.Color.Value);
+        using var paint = new SKPaint
+        {
+            Color = color,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true
+        };
+
+        using var path = new SKPath();
+        path.MoveTo(triangle.Vertex1X.Value, triangle.Vertex1Y.Value);
+        path.LineTo(triangle.Vertex2X.Value, triangle.Vertex2Y.Value);
+        path.LineTo(triangle.Vertex3X.Value, triangle.Vertex3Y.Value);
+        path.Close();
+
+        canvas.DrawPath(path, paint);
+    }
+
+    private void DrawHitTriangle(Triangle triangle)
+    {
+        using var hitCanvas = new SKCanvas(_hitBitmap!);
+        var color = Color.FromUint(triangle.ColorKey.Value);
+        using var paint = new SKPaint
+        {
+            Color = new SKColor(color.R, color.G, color.B, color.A),
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true
+        };
+        using var path = new SKPath();
+        path.MoveTo(triangle.Vertex1X.Value, triangle.Vertex1Y.Value);
+        path.LineTo(triangle.Vertex2X.Value, triangle.Vertex2Y.Value);
+        path.LineTo(triangle.Vertex3X.Value, triangle.Vertex3Y.Value);
+        path.Close();
+        hitCanvas.DrawPath(path, paint);
+    }
+
+    #endregion
+
+    private readonly SKPaint _axisPaint = new SKPaint
+    {
+        Color = SKColors.Red,
+        StrokeWidth = 2,
+        IsAntialias = true,
+        Style = SKPaintStyle.Stroke
+    };
+
+    private readonly SKPaint _arrowPaint = new SKPaint
+    {
+        Color = SKColors.Red,
+        StrokeWidth = 2,
+        IsAntialias = true,
+        Style = SKPaintStyle.Fill
+    };
+
+    private readonly SKPaint _textPaint = new SKPaint
+    {
+        Color = SKColors.Red,
+        IsAntialias = true
+    };
+
+    private readonly SKFont _textFont = new SKFont
+    {
+        Edging = SKFontEdging.Antialias
+    };
+
+    /// <summary>
+    /// 在左下角绘制坐标系标识
+    /// </summary>
+    private void DrawCoordinateSystem(SKCanvas canvas)
+    {
+        const int size = 30; // 坐标系区域大小
+        const int offset = 10; // 边距
+
+        // 保存当前画布状态
+        canvas.Save();
+
+        try
+        {
+            canvas.Translate(0, 512);
+            canvas.Scale(1, -1);
+
+            // 坐标系原点位置（左下角偏移）
+            float originX = offset;
+            float originY = offset;
+
+            // 绘制X轴（向右）
+            canvas.DrawLine(originX, originY, originX + size, originY, _axisPaint);
+
+            // 绘制Y轴（向上）
+            canvas.DrawLine(originX, originY, originX, originY + size, _axisPaint);
+
+            // 绘制X轴箭头
+            float arrowSize = 4;
+            using (var path = new SKPath())
+            {
+                path.MoveTo(originX + size, originY);
+                path.LineTo(originX + size - arrowSize, originY - arrowSize);
+                path.LineTo(originX + size - arrowSize, originY + arrowSize);
+                path.Close();
+                canvas.DrawPath(path, _arrowPaint);
+            }
+
+            // 绘制Y轴箭头
+            using (var path = new SKPath())
+            {
+                path.MoveTo(originX, originY + size);
+                path.LineTo(originX - arrowSize, originY + size - arrowSize);
+                path.LineTo(originX + arrowSize, originY + size - arrowSize);
+                path.Close();
+                canvas.DrawPath(path, _arrowPaint);
+            }
+
+            canvas.DrawText("X", originX + size + 2, originY, _textFont, _textPaint);
+
+            canvas.Save();
+            // 临时反转Y轴
+            canvas.Scale(1, -1);
+            canvas.DrawText("Y", originX, -(originY + size + 12), _textFont, _textPaint);
+            canvas.Restore();
+        }
+        finally
+        {
+            // 恢复画布状态
+            canvas.Restore();
+        }
+    }
+
+    public void Dispose()
+    {
+        PrimitiveService.OnChange -= AddPrimitive;
+    }
+}
