@@ -25,6 +25,8 @@
     // 对齐算法入口
     private void Align(AlignType type)
     {
-        AlignExtensions.Align<Primitive>(PrimitiveService.GetSelection(), type);
+        var selection = PrimitiveService.GetSelection();
+        AlignExtensions.Align<Primitive>(selection, type);
+        StateHasChanged();
     }
 }

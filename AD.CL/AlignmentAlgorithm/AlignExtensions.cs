@@ -3,13 +3,13 @@
 public static class AlignExtensions
 {
     /// <summary>
-    /// 通用对齐算法 —— 模型无关、库无关、框架无关
-    /// 只要实现 IAlignable，就能对齐
+    /// 对齐算法
     /// </summary>
-    public static void Align<T>(IEnumerable<T> items, AlignType type, bool recordHistory = true)
+    /// <remarks>适用于实现 IAlignable接口 的元素</remarks>
+    public static void Align<T>(IEnumerable<T> items, AlignType type)
         where T : IAlignable
     {
-        var list = items.Where(x => x != null).ToList();
+        var list = items.ToList();
         if (list.Count < 2)
         {
             Console.WriteLine("can align zero or two elements, fail silently");
@@ -22,16 +22,9 @@ public static class AlignExtensions
         // 2. 计算总包围盒（对齐参考线）
         var unionBox = MergeBoxes(boxes);
 
-        // 3. 优化：已对齐直接返回
+        // 3. 已对齐直接返回
         if (IsAlreadyAligned(boxes, type))
             return;
-
-        // 4. 执行对齐（事务式）
-        if (recordHistory)
-        {
-            // 可选：推入 Undo 栈
-            // UndoStack.Push(new AlignCommand(list, type));
-        }
 
         foreach (var (item, box) in list.Zip(boxes))
         {

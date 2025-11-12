@@ -23,28 +23,22 @@ public abstract class Primitive : IAlignable
 
     public List<PropValue> Props { get; }
 
-    public Box GetWorldBoundingBox()
-    {
-        throw new NotImplementedException();
-    }
-
-    public void Translate(float deltaX, float deltaY)
-    {
-        throw new NotImplementedException();
-    }
-
     protected void AddProp(PropValue propValue)
     {
         Props.Add(propValue);
     }
+
+    public abstract Box GetWorldBoundingBox();
+
+    public virtual void Translate(float deltaX, float deltaY) { }
 }
 
 public class Circle : Primitive
 {
     public Circle() : base("Circle")
     {
-        CenterX = new FloatPropValue("CenterX", 0.0f);
-        CenterY = new FloatPropValue("CenterY", 0.0f);
+        CenterX = new FloatPropValue("CenterX", 10.0f);
+        CenterY = new FloatPropValue("CenterY", 10.0f);
         Radius = new FloatPropValue("Radius", 5.0f);
         Color = new UintPropValue("Color", 0xFFFFFFFF);
 
@@ -58,14 +52,29 @@ public class Circle : Primitive
     public FloatPropValue CenterY { get; }
     public FloatPropValue Radius { get; }
     public UintPropValue Color { get; }
+
+    public override Box GetWorldBoundingBox()
+    {
+        float left = CenterX.Value - Radius.Value;
+        float top = CenterY.Value - Radius.Value;
+        float right = CenterX.Value + Radius.Value;
+        float bottom = CenterY.Value + Radius.Value;
+        return new Box(left, top, right, bottom);
+    }
+
+    public override void Translate(float deltaX, float deltaY)
+    {
+        CenterX.Value += deltaX;
+        CenterY.Value += deltaY;
+    }
 }
 
 public class Rectangle : Primitive
 {
     public Rectangle() : base("Rectangle")
     {
-        PosX = new FloatPropValue("PosX", 0.0f);
-        PosY = new FloatPropValue("PosY", 0.0f);
+        PosX = new FloatPropValue("PosX", 10.0f);
+        PosY = new FloatPropValue("PosY", 10.0f);
         Width = new FloatPropValue("Width", 10.0f);
         Height = new FloatPropValue("Height", 10.0f);
         Color = new UintPropValue("Color", 0xFFFFFFFF);
@@ -82,18 +91,33 @@ public class Rectangle : Primitive
     public FloatPropValue Width { get; }
     public FloatPropValue Height { get; }
     public UintPropValue Color { get; }
+
+    public override Box GetWorldBoundingBox()
+    {
+        float left = PosX.Value;
+        float top = PosY.Value;
+        float right = PosX.Value + Width.Value;
+        float bottom = PosY.Value + Height.Value;
+        return new Box(left, top, right, bottom);
+    }
+
+    public override void Translate(float deltaX, float deltaY)
+    {
+        PosX.Value += deltaX;
+        PosY.Value += deltaY;
+    }
 }
 
 public class Triangle : Primitive
 {
     public Triangle() : base("Triangle")
     {
-        Vertex1X = new FloatPropValue("Vertex1X", 0.0f);
-        Vertex1Y = new FloatPropValue("Vertex1Y", 0.0f);
-        Vertex2X = new FloatPropValue("Vertex2X", 10.0f);
-        Vertex2Y = new FloatPropValue("Vertex2Y", 0.0f);
-        Vertex3X = new FloatPropValue("Vertex3X", 5.0f);
-        Vertex3Y = new FloatPropValue("Vertex3Y", 10.0f);
+        Vertex1X = new FloatPropValue("Vertex1X", 50.0f);
+        Vertex1Y = new FloatPropValue("Vertex1Y", 50.0f);
+        Vertex2X = new FloatPropValue("Vertex2X", 70.0f);
+        Vertex2Y = new FloatPropValue("Vertex2Y", 50.0f);
+        Vertex3X = new FloatPropValue("Vertex3X", 60.0f);
+        Vertex3Y = new FloatPropValue("Vertex3Y", 60.0f);
         Color = new UintPropValue("Color", 0xFFFFFFFF);
 
         AddProp(Vertex1X);
@@ -112,4 +136,20 @@ public class Triangle : Primitive
     public FloatPropValue Vertex3X { get; }
     public FloatPropValue Vertex3Y { get; }
     public UintPropValue Color { get; }
+
+    public override Box GetWorldBoundingBox()
+    {
+        float minX = Math.Min(Math.Min(Vertex1X.Value, Vertex2X.Value), Vertex3X.Value);
+        float maxX = Math.Max(Math.Max(Vertex1X.Value, Vertex2X.Value), Vertex3X.Value);
+        float minY = Math.Min(Math.Min(Vertex1Y.Value, Vertex2Y.Value), Vertex3Y.Value);
+        float maxY = Math.Max(Math.Max(Vertex1Y.Value, Vertex2Y.Value), Vertex3Y.Value);
+        return new Box(minX, minY, maxX, maxY);
+    }
+
+    public override void Translate(float deltaX, float deltaY)
+    {
+        Vertex1X.Value += deltaX; Vertex1Y.Value += deltaY;
+        Vertex2X.Value += deltaX; Vertex2Y.Value += deltaY;
+        Vertex3X.Value += deltaX; Vertex3Y.Value += deltaY;
+    }
 }

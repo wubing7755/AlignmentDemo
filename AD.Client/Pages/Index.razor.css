@@ -4,7 +4,8 @@
 }
 
 .workspace-grid-container {
-    height: 100vh;
+    height: 100%;
+    width: 100%;
     display: grid;
     grid-template-rows: 60px 1fr;
     /* 三列，比例为 1:2:1  */
@@ -36,4 +37,30 @@
 .property-bar-pane {
     grid-area: property-bar;
     background-color: #6f42c1;
+    overflow-y: auto;
+    height: 600px;
+}
+
+.common-scrollbar::-webkit-scrollbar {
+    width: var(--ua-scrollbar-size);
+    height: var(--ua-scrollbar-size);
+    transition: var(--ua-transition-normal);
+}
+
+/* 滚动条轨道背景 */
+.common-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* 滚动条滑块 */
+.common-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--ua-color-scrollbar);
+    border-radius: 3px;
+    border: 3px solid transparent;
+    transition: var(--ua-transition-normal);
+}
+
+/* 滚动条按钮（上下箭头） */
+.common-scrollbar::-webkit-scrollbar-button {
+    display: none;
 }
