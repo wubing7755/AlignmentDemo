@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AD\Shared\AD.CL.csproj" />
+    <ProjectReference Include="..\AD.CL\AD.CL.csproj" />
   </ItemGroup>
 
 </Project>

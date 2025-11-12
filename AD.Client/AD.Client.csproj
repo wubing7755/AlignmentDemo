@@ -14,8 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\AD.RCL\AD.RCL.csproj" />
-    <ProjectReference Include="..\Shared\AD.CL.csproj" />
+    <ProjectReference Include="..\AD.CL\AD.CL.csproj" />
+    <ProjectReference Include="..\AD.RCL\AD.RCL.csproj" />
   </ItemGroup>
 
   <ItemGroup>
