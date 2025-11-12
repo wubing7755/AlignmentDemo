@@ -1,6 +1,8 @@
-﻿namespace AD.CL.Primitives;
+﻿using AD.CL.AlignmentAlgorithm;
 
-public abstract class Primitive
+namespace AD.CL.Primitives;
+
+public abstract class Primitive : IAlignable
 {
     protected Primitive(string name)
     {
@@ -20,6 +22,16 @@ public abstract class Primitive
     public StringPropValue Name { get; }
 
     public List<PropValue> Props { get; }
+
+    public Box GetWorldBoundingBox()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Translate(float deltaX, float deltaY)
+    {
+        throw new NotImplementedException();
+    }
 
     protected void AddProp(PropValue propValue)
     {

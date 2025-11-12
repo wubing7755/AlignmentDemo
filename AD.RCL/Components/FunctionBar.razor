@@ -1,41 +1,30 @@
 @inject IPrimitiveService PrimitiveService
 
 <div class="function-bar">
-    <button @onclick="() => Align(AlignmentType.Left)" title="左对齐">
+    <button @onclick="() => Align(AlignType.Left)" title="左对齐">
         <i class="bi bi-align-start"></i>
     </button>
-    <button @onclick="() => Align(AlignmentType.CenterHorizontal)" title="水平居中">
+    <button @onclick="() => Align(AlignType.HCenter)" title="水平居中">
         <i class="bi bi-distribute-horizontal"></i>
     </button>
-    <button @onclick="() => Align(AlignmentType.Right)" title="右对齐">
+    <button @onclick="() => Align(AlignType.Right)" title="右对齐">
         <i class="bi bi-align-end"></i>
     </button>
-    <button @onclick="() => Align(AlignmentType.Top)" title="顶部对齐">
+    <button @onclick="() => Align(AlignType.Top)" title="顶部对齐">
         <i class="bi bi-align-top"></i>
     </button>
-    <button @onclick="() => Align(AlignmentType.CenterVertical)" title="垂直居中">
+    <button @onclick="() => Align(AlignType.VCenter)" title="垂直居中">
         <i class="bi bi-distribute-vertical"></i>
     </button>
-    <button @onclick="() => Align(AlignmentType.Bottom)" title="底部对齐">
+    <button @onclick="() => Align(AlignType.Bottom)" title="底部对齐">
         <i class="bi bi-align-bottom"></i>
     </button>
 </div>
 
 @code {
-
     // 对齐算法入口
-    private void Align(AlignmentType type)
+    private void Align(AlignType type)
     {
-
-    }
-
-    private enum AlignmentType
-    {
-        Left,
-        Right,
-        CenterHorizontal,
-        Top,
-        Bottom,
-        CenterVertical
+        AlignExtensions.Align<Primitive>(PrimitiveService.GetSelection(), type);
     }
 }
