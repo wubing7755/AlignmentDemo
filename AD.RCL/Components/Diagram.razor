@@ -65,15 +65,10 @@
         // 将绘制区域复制到主Bitmap的指定位置
         using (var mainCanvas = new SKCanvas(_mainBitmap))
         {
-            // 清除指定区域
-            var clearRect = new SKRect(0, 0, 512, 512);
-            mainCanvas.ClipRect(clearRect);
-            mainCanvas.Clear(SKColors.Transparent);
-
             mainCanvas.DrawBitmap(_drawBitmap, 0, 0);
         }
 
-        // 将主Bitmap的512x512区域绘制到canvas上，并进行坐标系转换
+        // 将主Bitmap的512x512区域绘制到canvas上
         DrawCanvas(canvas);
 
         // 绘制坐标系标识
@@ -84,60 +79,64 @@
     {
         if (_drawBitmap == null) return;
 
-        // 清空命中检测区域
-        using var hitCanvas = new SKCanvas(_hitBitmap);
-        hitCanvas.Clear(SKColors.Transparent);
-
         // 清除绘制区域
         using var canvas = new SKCanvas(_drawBitmap);
-        canvas.Clear(SKColors.Transparent);
+        canvas.Clear(SKColors.Black);
 
-        // 绘制所有圆
-        foreach (var primitive in _primitives)
-        {
-            switch (primitive)
-            {
-                case Circle circle:
-                    DrawCircle(canvas, circle);
-                    DrawHitCircle(circle);
-                    break;
-                case Rectangle rectangle:
-                    DrawRectangle(canvas, rectangle);
-                    DrawHitRectangle(rectangle);
-                    break;
-                case Triangle triangle:
-                    DrawTriangle(canvas, triangle);
-                    DrawHitTriangle(triangle);
-                    break;
-            }
-        }
-    }
-
-    private void DrawCanvas(SKCanvas canvas)
-    {
-        if (_mainBitmap == null) return;
+        // 清空命中检测区域
+        using var hitCanvas = new SKCanvas(_hitBitmap);
+        hitCanvas.Clear(SKColors.Black);
 
         canvas.Save();
-
+        hitCanvas.Save();
         try
         {
             // 坐标系转换：将原点从左上角移动到左下角，Y轴向上为正
             canvas.Translate(0, 512);
             canvas.Scale(1, -1);
 
-            // 定义源区域（主Bitmap中的512x512区域）
-            var sourceRect = new SKRect(0, 0, 512, 512);
-            // 定义目标区域（画布上的512x512区域）
-            var destRect = new SKRect(0, 0, 512, 512);
+            hitCanvas.Translate(0, 512);
+            hitCanvas.Scale(1, -1);
 
-            // 绘制到转换后的坐标系中
-            using var paint = new SKPaint { IsAntialias = true };
-            canvas.DrawBitmap(_mainBitmap, sourceRect, destRect, paint);
+            // 绘制所有圆
+            foreach (var primitive in _primitives)
+            {
+                switch (primitive)
+                {
+                    case Circle circle:
+                        DrawCircle(canvas, circle);
+                        DrawHitCircle(hitCanvas, circle);
+                        break;
+                    case Rectangle rectangle:
+                        DrawRectangle(canvas, rectangle);
+                        DrawHitRectangle(hitCanvas, rectangle);
+                        break;
+                    case Triangle triangle:
+                        DrawTriangle(canvas, triangle);
+                        DrawHitTriangle(hitCanvas, triangle);
+                        break;
+                }
+            }
         }
         finally
         {
             canvas.Restore();
+            hitCanvas.Restore();
         }
+
+    }
+
+    private void DrawCanvas(SKCanvas canvas)
+    {
+        if (_mainBitmap == null) return;
+
+        // 定义源区域（主Bitmap中的512x512区域）
+        var sourceRect = new SKRect(0, 0, 512, 512);
+        // 定义目标区域（画布上的512x512区域）
+        var destRect = new SKRect(0, 0, 512, 512);
+
+        using var paint = new SKPaint { IsAntialias = true };
+        canvas.DrawBitmap(_mainBitmap, sourceRect, destRect, paint);
     }
 
     private void HandleMouseDown(MouseEventArgs e)
@@ -148,23 +147,14 @@
         var x = (int)e.OffsetX;
         var y = (int)e.OffsetY;
 
-        // 调整坐标系（Y轴翻转）
-        y = 512 - y;
-
         // 获取像素颜色
         var color = _hitBitmap.GetPixel(x, y);
-
-        // 点击空白处，清除选择
-        if (color.Alpha == 0)
+        var colorKey = (uint)color;
+        if (!ColorKeyManager.TryGetPrimitive(colorKey, out var primitive) || primitive is null)
         {
             PrimitiveService.ClearSelection();
             return;
         }
-
-        // 查找对应的图元
-        var colorKey = (uint)color;
-        if (!ColorKeyManager.TryGetPrimitive(colorKey, out var primitive) || primitive is null)
-            return;
 
         if (e.CtrlKey)
         {
@@ -193,9 +183,8 @@
         canvas.DrawCircle(circle.CenterX.Value, circle.CenterY.Value, circle.Radius.Value, paint);
     }
 
-    private void DrawHitCircle(Circle circle)
+    private void DrawHitCircle(SKCanvas hitCanvas, Circle circle)
     {
-        using var hitCanvas = new SKCanvas(_hitBitmap!);
         var color = Color.FromUint(circle.ColorKey.Value);
         using var paint = new SKPaint
         {
@@ -224,9 +213,8 @@
         canvas.DrawRect(rect, paint);
     }
 
-    private void DrawHitRectangle(Rectangle rectangle)
+    private void DrawHitRectangle(SKCanvas hitCanvas, Rectangle rectangle)
     {
-        using var hitCanvas = new SKCanvas(_hitBitmap!);
         var color = Color.FromUint(rectangle.ColorKey.Value);
         using var paint = new SKPaint
         {
@@ -264,9 +252,8 @@
         canvas.DrawPath(path, paint);
     }
 
-    private void DrawHitTriangle(Triangle triangle)
+    private void DrawHitTriangle(SKCanvas hitCanvas, Triangle triangle)
     {
-        using var hitCanvas = new SKCanvas(_hitBitmap!);
         var color = Color.FromUint(triangle.ColorKey.Value);
         using var paint = new SKPaint
         {
@@ -283,6 +270,8 @@
     }
 
     #endregion
+
+    #region 坐标系绘制方法
 
     private readonly SKPaint _axisPaint = new SKPaint
     {
@@ -372,6 +361,8 @@
             canvas.Restore();
         }
     }
+
+    #endregion
 
     public void Dispose()
     {

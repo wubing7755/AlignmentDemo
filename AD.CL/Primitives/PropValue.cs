@@ -35,6 +35,16 @@ public class FloatPropValue : PropValue, IPropValue<float>
     }
 }
 
+public class DoublePropValue : PropValue, IPropValue<double>
+{
+    public double Value { get; set; }
+
+    public DoublePropValue(string name, double value) : base(name)
+    {
+        Value = value;
+    }
+}
+
 public class BoolPropValue : PropValue, IPropValue<bool>
 {
     public bool Value { get; set; }

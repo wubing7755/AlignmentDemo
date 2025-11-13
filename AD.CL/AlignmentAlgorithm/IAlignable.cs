@@ -8,8 +8,12 @@ public interface IAlignable
     Box GetWorldBoundingBox();
 
     /// <summary>
-    /// 在世界坐标系下平移
+    /// 获取图形的世界变换矩阵
     /// </summary>
-    void Translate(float deltaX, float deltaY);
-}
+    Transform GetWorldTransform();
 
+    /// <summary>
+    /// 设置图形的世界变换矩阵
+    /// </summary>
+    void SetWorldTransform(Transform transform);
+}

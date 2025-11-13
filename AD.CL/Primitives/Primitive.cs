@@ -28,9 +28,41 @@ public abstract class Primitive : IAlignable
         Props.Add(propValue);
     }
 
+    /// <heritdoc/>
     public abstract Box GetWorldBoundingBox();
 
-    public virtual void Translate(float deltaX, float deltaY) { }
+    /// <heritdoc/>
+    public virtual Transform GetWorldTransform()
+    {
+        var currentPos = GetCurrentPosition();
+        return new Transform(1, 0, 0, 1, currentPos.X, currentPos.Y);
+    }
+
+    /// <heritdoc/>
+    public virtual void SetWorldTransform(Transform transform)
+    {
+        var currentPos = GetCurrentPosition();
+        // 计算需要平移的增量
+        var deltaX = transform.Tx - currentPos.X;
+        var deltaY = transform.Ty - currentPos.Y;
+        Translate(deltaX, deltaY);
+    }
+
+    /// <summary>
+    /// 获取图形的当前位置
+    /// 子类必须实现此方法以提供其位置信息
+    /// </summary>
+    /// <returns>当前位置点</returns>
+    protected abstract Point GetCurrentPosition();
+
+    /// <summary>
+    /// 根据给定的增量平移图形
+    /// 子类必须实现此方法以更新其位置属性
+    /// </summary>
+    /// <param name="deltaX">X轴平移量。</param>
+    /// <param name="deltaY">Y轴平移量。</param>
+    public abstract void Translate(float deltaX, float deltaY);
+
 }
 
 public class Circle : Primitive
@@ -60,6 +92,11 @@ public class Circle : Primitive
         float right = CenterX.Value + Radius.Value;
         float bottom = CenterY.Value + Radius.Value;
         return new Box(left, top, right, bottom);
+    }
+
+    protected override Point GetCurrentPosition()
+    {
+        return new Point(CenterX.Value, CenterY.Value);
     }
 
     public override void Translate(float deltaX, float deltaY)
@@ -99,6 +136,11 @@ public class Rectangle : Primitive
         float right = PosX.Value + Width.Value;
         float bottom = PosY.Value + Height.Value;
         return new Box(left, top, right, bottom);
+    }
+
+    protected override Point GetCurrentPosition()
+    {
+        return new Point(PosX.Value, PosY.Value);
     }
 
     public override void Translate(float deltaX, float deltaY)
@@ -144,6 +186,13 @@ public class Triangle : Primitive
         float minY = Math.Min(Math.Min(Vertex1Y.Value, Vertex2Y.Value), Vertex3Y.Value);
         float maxY = Math.Max(Math.Max(Vertex1Y.Value, Vertex2Y.Value), Vertex3Y.Value);
         return new Box(minX, minY, maxX, maxY);
+    }
+
+    protected override Point GetCurrentPosition()
+    {
+        // 使用边界框的左上角作为三角形的位置
+        var bbox = GetWorldBoundingBox();
+        return new Point(bbox.MinX, bbox.MinY);
     }
 
     public override void Translate(float deltaX, float deltaY)
