@@ -44,10 +44,7 @@ public static class AlignExtensions
             var (dx, dy) = CalculateOffset(box, type, unionBox);
 
             // 平移变换
-            var newTransform = new Transform(
-                originalTransform.A, originalTransform.B, originalTransform.C, originalTransform.D,
-                originalTransform.Tx + dx, originalTransform.Ty + dy
-            );
+            var newTransform = Transform.Translate(originalTransform.Tx + dx, originalTransform.Ty + dy);
 
             // 应用变换
             item.SetWorldTransform(newTransform);

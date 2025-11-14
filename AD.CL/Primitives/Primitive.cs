@@ -40,7 +40,7 @@ public abstract class Primitive : IAlignable
     public Transform GetWorldTransform()
     {
         var currentPos = GetCurrentPosition();
-        return new Transform(1, 0, 0, 1, currentPos.X, currentPos.Y);
+        return Transform.Translate(currentPos.X, currentPos.Y);
     }
 
     /// <heritdoc/>

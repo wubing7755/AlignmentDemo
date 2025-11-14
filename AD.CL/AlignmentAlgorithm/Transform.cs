@@ -66,44 +66,5 @@ public struct Transform
     public Transform(float a, float b, float c, float d, float tx, float ty)
         => (A, B, C, D, Tx, Ty) = (a, b, c, d, tx, ty);
 
-    /// <summary>
-    /// 单位矩阵
-    /// </summary>
-    public static readonly Transform Identity = new Transform(1, 0, 0, 1, 0, 0);
-
-    public Transform Clone() => new Transform(A, B, C, D, Tx, Ty);
-
     public static Transform Translate(float tx, float ty) => new Transform(1, 0, 0, 1, tx, ty);
-
-    public static Transform Scale(float sx, float sy) => new Transform(sx, 0, 0, sy, 0, 0);
-
-    /// <summary>
-    /// | cosθ  -sinθ |
-    /// | sinθ  cosθ |
-    /// </summary>
-    public static Transform Rotate(float degrees)
-    {
-        float rad = degrees * MathF.PI / 180;
-        float c = MathF.Cos(rad);
-        float s = MathF.Sin(rad);
-        return new Transform(c, s, -s, c, 0, 0);
-    }
-
-    public Point ApplyTo(Point p) => new Point(
-            p.X * A + p.Y * C + Tx,
-            p.X * B + p.Y * D + Ty);
-
-    public Point ApplyVector(Point v) => new Point(
-            v.X * A + v.Y * C,
-            v.X * B + v.Y * D);
-
-    public static Transform operator *(Transform a, Transform b) => Multiply(a, b);
-
-    public static Transform Multiply(Transform a, Transform b) => new Transform(
-            a.A * b.A + a.C * b.B,
-            a.B * b.A + a.D * b.B,
-            a.A * b.C + a.C * b.D,
-            a.B * b.C + a.D * b.D,
-            a.A * b.Tx + a.C * b.Ty + a.Tx,
-            a.B * b.Tx + a.D * b.Ty + a.Ty);
 }
