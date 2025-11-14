@@ -6,6 +6,7 @@
 /// <remarks>
 /// <para>
 /// 3x3 矩阵：
+/// 约定：列向量左乘
 /// <code>
 /// | a  c  tx |
 /// | b  d  ty |
@@ -38,12 +39,12 @@ public struct Transform
     public float A { get; set; }
 
     /// <summary>
-    /// Y方向对X的斜切
+    /// 沿X轴方向的错切因子（影响Y坐标）
     /// </summary>
     public float B { get; set; }
 
     /// <summary>
-    /// X方向对Y的斜切
+    /// 沿Y轴方向的错切因子（影响X坐标）
     /// </summary>
     public float C { get; set; }
 
@@ -76,6 +77,10 @@ public struct Transform
 
     public static Transform Scale(float sx, float sy) => new Transform(sx, 0, 0, sy, 0, 0);
 
+    /// <summary>
+    /// | cosθ  -sinθ |
+    /// | sinθ  cosθ |
+    /// </summary>
     public static Transform Rotate(float degrees)
     {
         float rad = degrees * MathF.PI / 180;
@@ -83,6 +88,7 @@ public struct Transform
         float s = MathF.Sin(rad);
         return new Transform(c, s, -s, c, 0, 0);
     }
+
     public Point ApplyTo(Point p) => new Point(
             p.X * A + p.Y * C + Tx,
             p.X * B + p.Y * D + Ty);

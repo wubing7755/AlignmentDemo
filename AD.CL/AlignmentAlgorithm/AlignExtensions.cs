@@ -20,20 +20,20 @@ public static class AlignExtensions
             return false;
         }
 
-        // 1. 获取所有对象的当前状态
+        // 获取所有对象的当前状态
         var boxes = list.Select(item => item.GetWorldBoundingBox()).ToList();
         var originalTransforms = list.Select(item => item.GetWorldTransform()).ToList();
 
-        // 2. 计算合并边界框作为对齐参考
+        // 计算合并边界框作为对齐参考
         var unionBox = MergeBoxes(boxes);
 
-        // 3. 检查是否已经对齐
+        // 检查是否已经对齐
         if (IsAlreadyAligned(boxes, type, unionBox))
         {
             return false;
         }
 
-        // 4. 计算并应用新的变换
+        // 计算并应用新的变换
         for (int i = 0; i < list.Count; i++)
         {
             var item = list[i];
@@ -43,13 +43,13 @@ public static class AlignExtensions
             // 计算偏移量
             var (dx, dy) = CalculateOffset(box, type, unionBox);
 
-            // 创建新的变换矩阵，只修改平移部分
+            // 平移变换
             var newTransform = new Transform(
                 originalTransform.A, originalTransform.B, originalTransform.C, originalTransform.D,
                 originalTransform.Tx + dx, originalTransform.Ty + dy
             );
 
-            // 通过接口应用变换
+            // 应用变换
             item.SetWorldTransform(newTransform);
         }
 
