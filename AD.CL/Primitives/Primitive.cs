@@ -58,7 +58,7 @@ public abstract class Primitive : IAlignable
     protected Point GetCurrentPosition()
     {
         var bbox = GetWorldBoundingBox();
-        return new Point(bbox.MinX, bbox.MinY);
+        return new Point(bbox.MinX, bbox.MaxY);
     }
 }
 
